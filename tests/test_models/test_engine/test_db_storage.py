@@ -1,150 +1,84 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
-import sys
-import unittest
-import inspect
-import io
-import pep8
-from datetime import datetime
-from contextlib import redirect_stdout
+"""Defines the DBStorage engine."""
+from os import getenv
+from models.base_model import Base
 from models.base_model import BaseModel
-from models.engine.file_storage import FileStorage
-from models import storage
+from models.amenity import Amenity
+from models.city import City
+from models.place import Place
+from models.review import Review
+from models.state import State
 from models.user import User
+from sqlalchemy import create_engine
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import scoped_session
+from sqlalchemy.orm import sessionmaker
 
 
-class TestFileStorage(unittest.TestCase):
+class DBStorage:
+    """Represents a database storage engine.
+
+    Attributes:
+        __engine (sqlalchemy.Engine): The working SQLAlchemy engine.
+        __session (sqlalchemy.Session): The working SQLAlchemy session.
     """
-    class for testing FileStorage class' methods
-    """
-    temp_file = ""
 
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the doc tests
-        """
-        cls.setup = inspect.getmembers(FileStorage, inspect.isfunction)
+    __engine = None
+    __session = None
 
-    def test_pep8_conformance_FileStorage(self):
-        """
-        Test that file_storage.py file conform to PEP8
-        """
-        pep8style = pep8.StyleGuide(quiet=True)
-        result = pep8style.check_files(['models/file_storage.py'])
-        self.assertEqual(result.total_errors, 1,
-                         "Found code style errors (and warnings).")
+    def __init__(self):
+        """Initialize a new DBStorage instance."""
+        self.__engine = create_engine("mysql+mysqldb://{}:{}@{}/{}".
+                                      format(getenv("HBNB_MYSQL_USER"),
+                                             getenv("HBNB_MYSQL_PWD"),
+                                             getenv("HBNB_MYSQL_HOST"),
+                                             getenv("HBNB_MYSQL_DB")),
+                                      pool_pre_ping=True)
+        if getenv("HBNB_ENV") == "test":
+            Base.metadata.drop_all(self.__engine)
 
-    def test_pep8_conformance_test_FileStorage(self):
-        """
-        Test that test_file_storage.py file conform to PEP8
-        """
-        pep8style = pep8.StyleGuide(quiet=True)
-        result = pep8style.check_files(['tests/test_models/\
-                                        test_file_storage.py'])
-        self.assertEqual(result.total_errors, 1,
-                         "Found code style errors (and warnings).")
+    def all(self, cls=None):
+        """Query on the curret database session all objects of the given class.
 
-    def test_module_docstring(self):
-        """
-        Tests if module docstring documentation exist
-        """
-        self.assertTrue(len(FileStorage.__doc__) >= 1)
+        If cls is None, queries all types of objects.
 
-    def test_class_docstring(self):
+        Return:
+            Dict of queried classes in the format <class name>.<obj id> = obj.
         """
-        Tests if class docstring documentation exist
-        """
-        self.assertTrue(len(FileStorage.__doc__) >= 1)
+        if cls is None:
+            objs = self.__session.query(State).all()
+            objs.extend(self.__session.query(City).all())
+            objs.extend(self.__session.query(User).all())
+            objs.extend(self.__session.query(Place).all())
+            objs.extend(self.__session.query(Review).all())
+            objs.extend(self.__session.query(Amenity).all())
+        else:
+            if type(cls) == str:
+                cls = eval(cls)
+            objs = self.__session.query(cls)
+        return {"{}.{}".format(type(o).__name__, o.id): o for o in objs}
 
-    def test_func_docstrings(self):
-        """
-        Tests if methods docstring documntation exist
-        """
-        for func in self.setup:
-            self.assertTrue(len(func[1].__doc__) >= 1)
+    def new(self, obj):
+        """Add obj to the current database session."""
+        self.__session.add(obj)
 
-    @staticmethod
-    def move_file(src, dest):
-        with open(src, 'r', encoding='utf-8') as myFile:
-            with open(dest, 'w', encoding='utf-8') as tempFile:
-                tempFile.write(myFile.read())
-        os.remove(src)
+    def save(self):
+        """Commit all changes to the current database session."""
+        self.__session.commit()
 
-    def setUp(self):
-        self.temp_file = '/temp_store.json'
-        self.temp_objs = [BaseModel(), BaseModel(), BaseModel()]
-        for obj in self.temp_objs:
-            storage.new(obj)
-        storage.save()
+    def delete(self, obj=None):
+        """Delete obj from the current database session."""
+        if obj is not None:
+            self.__session.delete(obj)
 
-    def tearDown(self):
-        """initialized object
-        """
-        del self.temp_objs
+    def reload(self):
+        """Create all tables in the database and initialize a new session."""
+        Base.metadata.create_all(self.__engine)
+        session_factory = sessionmaker(bind=self.__engine,
+                                       expire_on_commit=False)
+        Session = scoped_session(session_factory)
+        self.__session = Session()
 
-    def test_type(self):
-        """type checks for FileStorage
-        """
-        self.assertIsInstance(storage, FileStorage)
-        self.assertEqual(type(storage), FileStorage)
-
-    def test_save(self):
-        """tests save functionality for FileStorage
-        """
-        with open('file.json', 'r', encoding='utf-8') as myFile:
-            dump = myFile.read()
-        self.assertNotEqual(len(dump), 0)
-        temp_d = eval(dump)
-        key = self.temp_objs[0].__class__.__name__ + '.'
-        key += str(self.temp_objs[0].id)
-        self.assertNotEqual(len(temp_d[key]), 0)
-        key2 = 'State.412409120491902491209491024'
-        try:
-            self.assertRaises(temp_d[key2], KeyError)
-        except:
-            pass
-
-    def test_reload(self):
-        """tests reload functionality for FileStorage
-        """
-        storage.reload()
-        obj_d = storage.all()
-        key = self.temp_objs[1].__class__.__name__ + '.'
-        key += str(self.temp_objs[1].id)
-        self.assertNotEqual(obj_d[key], None)
-        self.assertEqual(obj_d[key].id, self.temp_objs[1].id)
-        key2 = 'State.412409120491902491209491024'
-        try:
-            self.assertRaises(obj_d[key2], KeyError)
-        except:
-            pass
-
-    def test_delete_basic(self):
-        """tests delete basic functionality for FileStorage
-        """
-        obj_d = storage.all()
-        key2 = self.temp_objs[2].__class__.__name__ + '.'
-        key2 += str(self.temp_objs[2].id)
-        try:
-            self.assertRaises(obj_d[key2], KeyError)
-        except:
-            pass
-
-    def test_new_basic(self):
-        """tests new basic functionality for FileStorage
-        """
-        obj = BaseModel()
-        storage.new(obj)
-        obj_d = storage.all()
-        key = obj.__class__.__name__ + '.' + str(obj.id)
-        self.assertEqual(obj_d[key] is obj, True)
-
-    def test_new_badinput(self):
-        """tests new bad input functionality for FileStorage
-        """
-        try:
-            self.assertRaises(storage.new('jwljfef'), TypeError)
-            self.assertRaises(storage.new(None), TypeError)
-        except:
-            pass
+    def close(self):
+        """Close the working SQLAlchemy session."""
+        self.__session.close()
