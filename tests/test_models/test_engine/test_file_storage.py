@@ -2,15 +2,8 @@
 """test for file storage"""
 import unittest
 import pep8
-import json
 import os
-from models.base_model import BaseModel
 from models.user import User
-from models.state import State
-from models.city import City
-from models.amenity import Amenity
-from models.place import Place
-from models.review import Review
 from models.engine.file_storage import FileStorage
 
 
@@ -27,15 +20,16 @@ class TestFileStorage(unittest.TestCase):
         cls.storage = FileStorage()
 
     @classmethod
-    def teardown(cls):
+    def tearDownClass(cls):
         """at the end of the test this will tear it down"""
         del cls.user
+        del cls.storage
 
     def tearDown(self):
         """teardown"""
         try:
             os.remove("file.json")
-        except Exception:
+        except FileNotFoundError:
             pass
 
     def test_pep8_FileStorage(self):
@@ -74,7 +68,7 @@ class TestFileStorage(unittest.TestCase):
             lines = f.readlines()
         try:
             os.remove(path)
-        except:
+        except FileNotFoundError:
             pass
         self.storage.save()
         with open(path, 'r') as f:
@@ -82,7 +76,7 @@ class TestFileStorage(unittest.TestCase):
         self.assertEqual(lines, lines2)
         try:
             os.remove(path)
-        except:
+        except FileNotFoundError:
             pass
         with open(path, "w") as f:
             f.write("{}")
