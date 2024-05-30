@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 """test for file storage"""
 import unittest
-import pep8
 
 
 class TestDBStorage(unittest.TestCase):
@@ -37,6 +36,7 @@ class TestDBStorage(unittest.TestCase):
         """Tests reload
         """
         pass
+
 
 if __name__ == "__main__":
     unittest.main()
