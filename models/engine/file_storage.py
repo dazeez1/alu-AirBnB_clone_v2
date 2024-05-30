@@ -1,13 +1,6 @@
 #!/usr/bin/python3
 """This is the file storage class for AirBnB"""
 import json
-from models.base_model import BaseModel
-from models.user import User
-from models.state import State
-from models.city import City
-from models.amenity import Amenity
-from models.place import Place
-from models.review import Review
 import shlex
 
 
@@ -18,6 +11,7 @@ class FileStorage:
         __file_path: path to the JSON file
         __objects: objects will be stored
     """
+
     __file_path = "file.json"
     __objects = {}
 
@@ -32,9 +26,9 @@ class FileStorage:
             for key in dictionary:
                 partition = key.replace('.', ' ')
                 partition = shlex.split(partition)
-                if (partition[0] == cls.__name__):
+                if partition[0] == cls.__name__:
                     dic[key] = self.__objects[key]
-            return (dic)
+            return dic
         else:
             return self.__objects
 
