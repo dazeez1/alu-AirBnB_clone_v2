@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 """Unit tests for User class"""
 
+# flake8: noqa
+
+import unittest
 from tests.test_models.test_base_model import TestBaseModel
 from models.user import User
 
@@ -36,6 +39,7 @@ class TestUser(TestBaseModel):
         new_user = self.value()
         new_user.password = "123aashja"
         self.assertEqual(type(new_user.password), str)
+
 
 if __name__ == '__main__':
     unittest.main()
