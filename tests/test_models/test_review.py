@@ -1,10 +1,12 @@
 #!/usr/bin/python3
 """Unit tests for Review class"""
 
+import unittest
 from models.place import Place
 from models.user import User
 from tests.test_models.test_base_model import TestBaseModel
 from models.review import Review
+
 
 class TestReview(TestBaseModel):
     """Test Review class"""
@@ -34,6 +36,7 @@ class TestReview(TestBaseModel):
         new_review = self.value()
         new_review.text = ""
         self.assertEqual(type(new_review.text), str)
+
 
 if __name__ == '__main__':
     unittest.main()
