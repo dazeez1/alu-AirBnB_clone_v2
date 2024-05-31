@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Unit tests for City class"""
 
+import unittest
 from models.state import State
 from tests.test_models.test_base_model import TestBaseModel
 from models.city import City
@@ -26,6 +27,7 @@ class TestCity(TestBaseModel):
         new_city = self.value()
         new_city.name = "Batch"
         self.assertEqual(type(new_city.name), str)
+
 
 if __name__ == '__main__':
     unittest.main()
