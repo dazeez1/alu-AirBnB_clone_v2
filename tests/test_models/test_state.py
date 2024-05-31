@@ -15,5 +15,6 @@ class TestState(TestBaseModel):
         new_state.name = "Arizona"
         self.assertEqual(type(new_state.name), str)
 
+
 if __name__ == '__main__':
     unittest.main()
