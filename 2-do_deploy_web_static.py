@@ -1,56 +1,40 @@
 #!/usr/bin/python3
-"""Compress web static package
-"""
-from fabric.api import run, put, env
-from os import path
+""" Function that compress a folder """
+from datetime import datetime
+from fabric.api import *
+import shlex
+import os
 
-env.hosts = ['18.209.20.255', '34.73.76.135']
-env.user = 'ubuntu'
-env.key_filename = '~/.ssh/id_rsa'
+
+env.hosts = ['18.234.81.62', '34.230.70.28']
+env.user = "ubuntu"
 
 
 def do_deploy(archive_path):
-    """Deploy web files to server"""
-    try:
-        if not path.exists(archive_path):
-            return False
-
-        # Upload archive
-        put(archive_path, '/tmp/')
-
-        # Create target dir
-        timestamp = archive_path[-18:-4]
-        run('sudo mkdir -p /data/web_static/releases/web_static_{}/'
-            .format(timestamp))
-
-        # Uncompress archive and delete .tgz
-        run('sudo tar -xzf /tmp/web_static_{}.tgz -C '
-            '/data/web_static/releases/web_static_{}/'
-            .format(timestamp, timestamp))
-
-        # Remove archive
-        run('sudo rm /tmp/web_static_{}.tgz'
-            .format(timestamp))
-
-        # Move contents into host web_static
-        run('sudo mv /data/web_static/releases/web_static_{}/web_static/* '
-            '/data/web_static/releases/web_static_{}/'
-            .format(timestamp, timestamp))
-
-        # Remove extraneous web_static dir
-        run('sudo rm -rf /data/web_static/releases/web_static_{}/web_static'
-            .format(timestamp))
-
-        # Delete pre-existing sym link
-        run('sudo rm -rf /data/web_static/current')
-
-        # Re-establish symbolic link
-        run('sudo ln -s /data/web_static/releases/web_static_{}/ '
-            '/data/web_static/current'
-            .format(timestamp))
-    except Exception as e:
-        print("Exception:", e)
+    """ The fuction doing Deployments """
+    if not os.path.exists(archive_path):
         return False
+    try:
+        name = archive_path.replace('/', ' ')
+        name = shlex.split(name)
+        name = name[-1]
 
-    # Return True on success
-    return True
+        wname = name.replace('.', ' ')
+        wname = shlex.split(wname)
+        wname = wname[0]
+
+        releases_path = "/data/web_static/releases/{}/".format(wname)
+        tmp_path = "/tmp/{}".format(name)
+
+        put(archive_path, "/tmp/")
+        run("mkdir -p {}".format(releases_path))
+        run("tar -xzf {} -C {}".format(tmp_path, releases_path))
+        run("rm {}".format(tmp_path))
+        run("mv {}web_static/* {}".format(releases_path, releases_path))
+        run("rm -rf {}web_static".format(releases_path))
+        run("rm -rf /data/web_static/current")
+        run("ln -s {} /data/web_static/current".format(releases_path))
+        print("New version deployed!")
+        return True
+    except:
+        return False
